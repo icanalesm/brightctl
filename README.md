@@ -34,7 +34,7 @@ make
 sudo make install
 ```
 
-`brightctl` controls brightness by writing to device files which most users do not have permissions to write to. One option to allow user *<user>* to execute `brightctl` is to configure `sudo` so that *<user>* is not required a password. This can be done by executing
+`brightctl` controls brightness by writing to device files which most users do not have permissions to write to. One option to allow user *user* to execute `brightctl` is to configure `sudo` so that *user* is not required a password. This can be done by executing
 
 ```
 sudo visudo -f /etc/sudoers.d/brightness
@@ -43,7 +43,7 @@ sudo visudo -f /etc/sudoers.d/brightness
 and adding the following line to this file
 
 ```
-<user> ALL=NOPASSWD:/usr/local/bin/brightctl
+user ALL=NOPASSWD:/usr/local/bin/brightctl
 ```
 
 replacing `/usr/local` if the configuration in `config.mk` is different.
