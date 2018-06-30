@@ -61,10 +61,10 @@ Commands:
 
 Subcommands:
   [+|-]<value>[%]         If '+' or '-' are given, increase or decrease the current brightness
-                            a) by value%% of maximum brightness, if %% is given, or
+                            a) by value% of maximum brightness, if % is given, or
                             b) by value, otherwise.
                           If neither '+' nor '-' are given, set the current brightness to
-                            a) value%% of maximum brightness, if %% is given, or
+                            a) value% of maximum brightness, if % is given, or
                             b) value, otherwise.
 ```
 
