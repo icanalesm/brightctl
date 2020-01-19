@@ -1,6 +1,6 @@
 /* ACPI backlight devices */
-static struct device devs[] = {
+static struct blled_dev devs[] = {
 	/* alias     class         name */
-	{ "screen",  "backlight",  "acpi_video0" },
-	{ "kbd",     "leds",       "smc::kbd_backlight" },
+	{ "screen",  "backlight",  "intel_backlight" },
+/*	{ "kbd",     "leds",       "smc::kbd_backlight" },*/
 };

@@ -1,8 +1,9 @@
 include config.mk
 
-SRC = brightctl.c
-
-OBJ = ${SRC:.c=.o}
+REQ =\
+	info/blled\
+	util\
+	brightctl
 
 all: options brightctl
 
@@ -12,15 +13,13 @@ options:
 	@echo "CC     = ${CC}"
 
 .c.o:
-	${CC} -c ${CFLAGS} $<
+	${CC} ${CFLAGS} -c -o $@ $<
 
-${OBJ}: config.mk config.h
-
-brightctl: ${OBJ}
-	${CC} -o $@ ${OBJ}
+brightctl: ${REQ:=.o}
+	${CC} ${REQ:=.o} -o $@
 
 clean:
-	rm -f brightctl ${OBJ}
+	rm -f brightctl ${REQ:=.o}
 
 install: all
 	mkdir -p ${DESTDIR}${PREFIX}/bin

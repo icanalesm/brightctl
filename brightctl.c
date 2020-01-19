@@ -3,119 +3,95 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define BRIGHTCUR     "brightness"
-#define BRIGHTMAX     "max_brightness"
-#define DEVPATHFMT    "/sys/class/%s/%s/"
-#define LENGTH(X)     (sizeof X / sizeof X[0])
-#define MAX(A, B)     ((A) > (B) ? (A) : (B))
-#define MIN(A, B)     ((A) < (B) ? (A) : (B))
+#include "info/info.h"
+#include "util.h"
 
-struct device {
-	char *alias;
-	char *class;
-	char *name;
-};
+#define MAX(A, B)    ((A) > (B) ? (A) : (B))
+#define MIN(A, B)    ((A) < (B) ? (A) : (B))
+#define BFR_MAX      128
 
-static int get_brightness(long *b, const char *filename);
-static int set_brightness(long b, const char *filename);
-static int manage_brightness(const struct device *dev, const char *subcmd);
-static void print_devs(const struct device *dev, size_t n);
+static int bright_set(const struct blled_dev *dev, int brightness);
+static int bright_manage(const struct blled_dev *dev, const char *subcmd);
+static void print_devs(const struct blled_dev *dev, size_t n);
 static void print_usage();
+
+static char bfr[BFR_MAX];
 
 #include "config.h"
 
-int get_brightness(long *b, const char *filename)
+int bright_set(const struct blled_dev *dev, int brightness)
 {
 	FILE *f;
-	int aux;
 
-	if (!(f = fopen(filename, "r")))
-		return 0;
-	aux = fscanf(f, "%ld", b);
-	fclose(f);
-
-	return (aux == EOF) ? 0 : aux;
-}
-
-int set_brightness(long b, const char *filename)
-{
-	FILE *f;
-	int aux;
-
-	if (!(f = fopen(filename, "w")))
+	if (esnprintf(bfr, sizeof(bfr), BRIGHT_CUR_FMT, dev->class, dev->name) < 0)
 		return -1;
-	aux = fprintf(f, "%ld", b);
+	if (!(f = fopen(bfr, "w")))
+		return -1;
+	if (fprintf(f, "%d", brightness) < 0) {
+		fclose(f);
+		return -1;
+	}
+
 	fclose(f);
 
-	return aux;
+	return 0;
 }
 
-int manage_brightness(const struct device *dev, const char *subcmd)
+int bright_manage(const struct blled_dev *dev, const char *subcmd)
 {
-	long bgt, max, val;
-	char buf[128], *aux;
+	int val;
+	char *aux;
+	struct blled_info info;
 
-	/* Get max brightness */
-	aux = buf + sprintf(buf, DEVPATHFMT, dev->class, dev->name);
-	strcat(buf, BRIGHTMAX);
-	if (!get_brightness(&max, buf)) {
-		fprintf(stderr, "error: Cannot read brightness from '%s'\n", buf);
-		return 0;
-	}
-
-	/* Get current brightness */
-	*aux = '\0';
-	strcat(buf, BRIGHTCUR);
-	if (!get_brightness(&bgt, buf)) {
-		fprintf(stderr, "error: Cannot read brightness from '%s'\n", buf);
-		return 0;
-	}
+	if (blled_getinfo(&info, dev) != 0)
+		return -1;
 
 	/* No subcommand given, print current and maximum brightness */
 	if (!subcmd) {
-		fprintf(stdout, "current brightness: %ld\n", bgt);
-		fprintf(stdout, "maximum brightness: %ld\n", max);
-		return 1;
+		fprintf(stdout, "current brightness: %d\n", info.bright);
+		fprintf(stdout, "maximum brightness: %d\n", info.bright_max);
+		return 0;
 	}
 
 	/* Parse subcommand */
 	val = strtol(subcmd, &aux, 10);
 	if (errno || aux == subcmd) {
 		fprintf(stderr, "error: Invalid subcommand '%s'\n", subcmd);
-		return 0;
+		return -1;
 	}
 
 	/* Compute new brightness */
 	if (*aux == '%')
-		val = val * max / 100;
+		val = val * info.bright_max / 100;
 	switch (*subcmd) {
 	case '+':
-		bgt = MIN(max, bgt + val);
+		info.bright = MIN(info.bright_max, info.bright + val);
 		break;
 	case '-':
-		bgt = MAX(0, bgt + val);
+		info.bright = MAX(0, info.bright + val);
 		break;
 	default:
-		bgt = MIN(max, val);
+		info.bright = MIN(info.bright_max, val);
 		break;
 	}
 
 	/* Set new brightness */
-	if (!set_brightness(bgt, buf)) {
-		fprintf(stderr, "error: Cannot set brightness in '%s'\n", buf);
-		return 0;
+	if (bright_set(dev, info.bright) != 0) {
+		fprintf(stderr, "error: Cannot set brightness in '%s'\n", bfr);
+		return -1;
 	}
 
-	return 1;
+	return 0;
 }
 
-void print_devs(const struct device *dev, size_t n)
+void print_devs(const struct blled_dev *dev, size_t n)
 {
 	size_t i;
 
 	for (i = 0; i < n; i++)
-		fprintf(stdout, "Device:\n\talias: %s\n\tdevice: "DEVPATHFMT"\n\n",
-	       	        dev[i].alias, dev[i].class, dev[i].name);
+		fprintf(stdout,
+		        "Device:\n\talias: %s\n\tdevice: "BRIGHT_DEV_FMT"\n\n",
+		        dev[i].alias, dev[i].class, dev[i].name);
 }
 
 void print_usage()
@@ -141,31 +117,31 @@ void print_usage()
 
 int main(int argc, char *argv[])
 {
-	size_t ndevs = LENGTH(devs);
+	size_t ndevs = LEN(devs);
 	size_t i;
 
 	/* No commands given, print list of devices */
 	if (argc == 1) {
 		print_devs(devs, ndevs);
-		exit(EXIT_SUCCESS);
+		return 0;
 	}
 
 	/* If command is help, print usage */
 	if (strcmp(argv[1], "help") == 0) {
 		print_usage();
-		exit(EXIT_SUCCESS);
+		return 0;
 	}
 
 	/* Manage device */
 	for (i = 0; i < ndevs; i++) {
 		if (strcmp(argv[1], devs[i].alias) != 0)
 			continue;
-		if (manage_brightness(&devs[i], (argc == 2) ? NULL : argv[2]))
-			exit(EXIT_SUCCESS);
-		exit(EXIT_FAILURE);
+		if (bright_manage(&devs[i], (argc == 2) ? NULL : argv[2]) == 0)
+			return 0;
+		return 1;
 	}
 
 	/* The given device was not specified in the configuration */
 	fprintf(stderr, "error: Device with alias '%s' not found in configuration\n", argv[1]);
-	exit(EXIT_FAILURE);
+	return 1;
 }
