@@ -1,7 +1,9 @@
 #include "info.h"
 #include "../util.h"
 
-#define BFR_MAX    128
+#define BRIGHT_CUR_FMT    "/sys/class/%s/%s/brightness"
+#define BRIGHT_MAX_FMT    "/sys/class/%s/%s/max_brightness"
+#define BFR_MAX           128
 
 int blled_getinfo(struct blled_info *info, const struct blled_dev *dev)
 {

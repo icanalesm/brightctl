@@ -6,9 +6,11 @@
 #include "info/info.h"
 #include "util.h"
 
-#define MAX(A, B)    ((A) > (B) ? (A) : (B))
-#define MIN(A, B)    ((A) < (B) ? (A) : (B))
-#define BFR_MAX      128
+#define BRIGHT_DEV_FMT    "/sys/class/%s/%s"
+#define BRIGHT_CUR_FMT    "/sys/class/%s/%s/brightness"
+#define MAX(A, B)         ((A) > (B) ? (A) : (B))
+#define MIN(A, B)         ((A) < (B) ? (A) : (B))
+#define BFR_MAX           128
 
 static int bright_set(const struct blled_dev *dev, int brightness);
 static int bright_manage(const struct blled_dev *dev, const char *subcmd);

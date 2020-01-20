@@ -1,7 +1,3 @@
-#define BRIGHT_DEV_FMT    "/sys/class/%s/%s"
-#define BRIGHT_CUR_FMT    "/sys/class/%s/%s/brightness"
-#define BRIGHT_MAX_FMT    "/sys/class/%s/%s/max_brightness"
-
 struct blled_info {
 	int bright;
 	int bright_max;
