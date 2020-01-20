@@ -9,14 +9,15 @@ all: options brightctl
 
 options:
 	@echo brightctl build options:
-	@echo "CFLAGS = ${CFLAGS}"
-	@echo "CC     = ${CC}"
+	@echo "CFLAGS  = ${CFLAGS}"
+	@echo "LDFLAGS = ${LDFLAGS}"
+	@echo "CC      = ${CC}"
 
 .c.o:
 	${CC} ${CFLAGS} -c -o $@ $<
 
 brightctl: ${REQ:=.o}
-	${CC} ${REQ:=.o} -o $@
+	${CC} ${CFLAGS} ${LDFLAGS} ${REQ:=.o} -o $@
 
 clean:
 	rm -f brightctl ${REQ:=.o}
